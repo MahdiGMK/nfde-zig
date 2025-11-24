@@ -23,6 +23,13 @@ Builds successfully.
 
 Install the library with `zig fetch --save git+https://github.com/MahdiGMK/nfde-zig.git`.
 
+Then add these lines to your build.zig :
+
+```zig
+const nfde = b.dependency("nfde_zig", .{});
+root_module.addImport("nfde", nfde.module("nfde"));
+```
+
 ## Example
 
 ```zig

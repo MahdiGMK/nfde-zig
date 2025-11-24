@@ -12,13 +12,14 @@ pub fn build(b: *std.Build) !void {
 
     const optimize = b.standardOptimizeOption(.{});
 
+    const mod = b.addModule("nfde", .{
+        .root_source_file = b.path("src/nfd.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
     const lib = b.addLibrary(.{
         .name = "nfde-zig",
-        .root_module = b.createModule(.{
-            .root_source_file = b.path("src/nfd.zig"),
-            .target = target,
-            .optimize = optimize,
-        }),
+        .root_module = mod,
     });
 
     const csrc = b.dependency("nfde", .{});
