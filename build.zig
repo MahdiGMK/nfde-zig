@@ -12,17 +12,18 @@ pub fn build(b: *std.Build) !void {
 
     const optimize = b.standardOptimizeOption(.{});
 
-    const lib = b.addStaticLibrary(.{
+    const lib = b.addLibrary(.{
         .name = "nfde-zig",
-        .root_source_file = b.path("src/root.zig"),
-        .target = target,
-        .optimize = optimize,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/nfd.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
     });
 
-    const known_folders = b.dependency("known_folders", .{}).module("known-folders");
-    lib.root_module.addImport("known-folders", known_folders);
+    const csrc = b.dependency("nfde", .{});
 
-    lib.addIncludePath(b.path("nativefiledialog-extended/src/include/"));
+    lib.addIncludePath(csrc.path("src/include/"));
 
     const build_os = lib.root_module.resolved_target.?.result.os.tag;
 
@@ -32,7 +33,7 @@ pub fn build(b: *std.Build) !void {
         lib.linkSystemLibrary("unwind");
 
         lib.addCSourceFile(.{
-            .file = b.path("nativefiledialog-extended/src/nfd_win.cpp"),
+            .file = csrc.path("src/nfd_win.cpp"),
             .language = .cpp,
             .flags = &.{
                 "-fno-exceptions",
@@ -46,7 +47,7 @@ pub fn build(b: *std.Build) !void {
         lib.linkFramework("UniformTypeIdentifiers");
 
         lib.addCSourceFile(.{
-            .file = b.path("nativefiledialog-extended/src/nfd_cocoa.m"),
+            .file = csrc.path("src/nfd_cocoa.m"),
             .language = .objective_c,
         });
     } else {
@@ -62,14 +63,8 @@ pub fn build(b: *std.Build) !void {
             lib.linkSystemLibrary2("gdk-3.0", .{ .use_pkg_config = .force });
         }
 
-        const window_backend =
-            if (use_portal)
-                "nativefiledialog-extended/src/nfd_portal.cpp"
-            else
-                "nativefiledialog-extended/src/nfd_gtk.cpp";
-
         lib.addCSourceFile(.{
-            .file = b.path(window_backend),
+            .file = csrc.path(if (use_portal) "src/nfd_portal.cpp" else "src/nfd_gtk.cpp"),
             .language = .cpp,
         });
     }
@@ -77,9 +72,7 @@ pub fn build(b: *std.Build) !void {
     b.installArtifact(lib);
 
     var tests = b.addTest(.{
-        .root_source_file = b.path("src/tests.zig"),
-        .target = target,
-        .optimize = optimize,
+        .root_module = lib.root_module,
     });
 
     const test_step = b.step("test", "Run library tests");
@@ -87,9 +80,11 @@ pub fn build(b: *std.Build) !void {
 
     const demo_exe = b.addExecutable(.{
         .name = "demo",
-        .root_source_file = b.path("demo/main.zig"),
-        .target = target,
-        .optimize = optimize,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("demo/main.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
     });
 
     demo_exe.root_module.addImport("nfdzig", lib.root_module);
