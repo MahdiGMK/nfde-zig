@@ -2,14 +2,7 @@ const std = @import("std");
 const builtin = @import("builtin");
 
 pub fn build(b: *std.Build) !void {
-    const target =
-        if (builtin.os.tag == .windows)
-            b.resolveTargetQuery(.{
-                .abi = .msvc,
-            })
-        else
-            b.standardTargetOptions(.{});
-
+    const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
     const mod = b.addModule("nfde", .{
