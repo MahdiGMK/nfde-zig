@@ -29,11 +29,13 @@ pub fn build(b: *std.Build) !void {
     const build_os = lib.root_module.resolved_target.?.result.os.tag;
 
     if (build_os == .windows) {
-        lib.linkLibCpp();
-        lib.linkLibC();
-        lib.linkSystemLibrary("unwind");
+        mod.link_libc = true;
+        mod.link_libcpp = true;
+        mod.linkSystemLibrary("shell32", .{});
+        mod.linkSystemLibrary("ole32", .{});
+        mod.linkSystemLibrary("uuid", .{}); // needed by MinGW
 
-        lib.addCSourceFile(.{
+        mod.addCSourceFile(.{
             .file = csrc.path("src/nfd_win.cpp"),
             .language = .cpp,
             .flags = &.{
@@ -41,13 +43,13 @@ pub fn build(b: *std.Build) !void {
             },
         });
     } else if (build_os == .macos) {
-        lib.linkSystemLibrary("objc");
-        lib.linkFramework("Foundation");
-        lib.linkFramework("Cocoa");
-        lib.linkFramework("AppKit");
-        lib.linkFramework("UniformTypeIdentifiers");
+        mod.linkSystemLibrary("objc", .{});
+        mod.linkFramework("Foundation", .{});
+        mod.linkFramework("Cocoa", .{});
+        mod.linkFramework("AppKit", .{});
+        mod.linkFramework("UniformTypeIdentifiers", .{});
 
-        lib.addCSourceFile(.{
+        mod.addCSourceFile(.{
             .file = csrc.path("src/nfd_cocoa.m"),
             .language = .objective_c,
         });
